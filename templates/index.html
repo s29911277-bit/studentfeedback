@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Student Feedback Form</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Student Feedback</h1>
+
+      <form id="feedbackForm">
+        <label>
+          Full name
+          <input type="text" name="name" required />
+        </label>
+
+        <label>
+          Email (optional)
+          <input type="email" name="email" />
+        </label>
+
+        <label>
+          Course / Subject
+          <input type="text" name="course" required />
+        </label>
+
+        <label>
+          Rating
+          <select name="rating" required>
+            <option value="">--</option>
+            <option value="5">5 - Excellent</option>
+            <option value="4">4 - Good</option>
+            <option value="3">3 - Okay</option>
+            <option value="2">2 - Poor</option>
+            <option value="1">1 - Very poor</option>
+          </select>
+        </label>
+
+        <label>
+          Comments
+          <textarea name="comments" rows="4"></textarea>
+        </label>
+
+        <label class="checkbox">
+          <input type="checkbox" name="consent" value="yes" required /> I agree to have my feedback stored (required for submission)
+        </label>
+
+        <div class="actions">
+          <button type="submit">Submit feedback</button>
+        </div>
+
+        <div id="message" role="status" aria-live="polite"></div>
+      </form>
+    </main>
+
+    <script src="/static/js/script.js"></script>
+  </body>
+</html>

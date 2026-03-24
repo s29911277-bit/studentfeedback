@@ -1,9 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import os
 import json
-import smtplib
 from datetime import datetime
-from email.message import EmailMessage
 
 try:
     from openpyxl import Workbook, load_workbook
@@ -19,9 +17,6 @@ DESKTOP_DIR = os.path.join(os.path.expanduser('~'), 'Desktop')
 EXCEL_FILE = os.path.join(DESKTOP_DIR, 'feedback_submissions.xlsx')
 EXCEL_HEADERS = ['name', 'email', 'course', 'rating', 'comments', 'consent', 'receivedAt']
 MAX_SUBMISSIONS_PER_PERSON = 2
-FEEDBACK_RECIPIENT = 's29911277@gmail.com'
-SMTP_HOST = 'smtp.gmail.com'
-SMTP_PORT = 587
 
 
 def normalize_identity(value):
@@ -78,55 +73,6 @@ def append_submission_to_excel(entry):
     workbook.save(EXCEL_FILE)
 
 
-def format_feedback_email(entry):
-    teachers = entry.get('teachers') or []
-    teacher_comments = entry.get('teacherComments') or {}
-    teacher_lines = []
-
-    if teachers:
-        for teacher in teachers:
-            comment = (teacher_comments.get(teacher) or '').strip()
-            teacher_lines.append(f'- {teacher}')
-            if comment:
-                teacher_lines.append(f'  Comment: {comment}')
-    else:
-        teacher_lines.append('- None selected')
-
-    return '\n'.join([
-        'A new feedback submission was received.',
-        '',
-        f"Name: {entry.get('name', '')}",
-        f"Email: {entry.get('email', '')}",
-        f"Course: {entry.get('course', '')}",
-        f"Rating: {entry.get('rating', '')}",
-        f"General comments: {entry.get('comments', '')}",
-        f"Consent given: {entry.get('consent', '')}",
-        f"Received at: {entry.get('receivedAt', '')}",
-        '',
-        'Selected teachers:',
-        *teacher_lines
-    ])
-
-
-def send_feedback_email(entry):
-    smtp_email = os.environ.get('FEEDBACK_SMTP_EMAIL', FEEDBACK_RECIPIENT)
-    smtp_password = os.environ.get('FEEDBACK_SMTP_APP_PASSWORD', '')
-
-    if not smtp_email or not smtp_password:
-        raise RuntimeError('Email sending is not configured. Set FEEDBACK_SMTP_EMAIL and FEEDBACK_SMTP_APP_PASSWORD.')
-
-    message = EmailMessage()
-    message['Subject'] = f"New feedback from {entry.get('name', 'Student')}"
-    message['From'] = smtp_email
-    message['To'] = FEEDBACK_RECIPIENT
-    message.set_content(format_feedback_email(entry))
-
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
-        smtp.starttls()
-        smtp.login(smtp_email, smtp_password)
-        smtp.send_message(message)
-
-
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 
@@ -158,7 +104,6 @@ def submit():
     with open(SUB_FILE, 'w', encoding='utf-8') as f:
         json.dump(arr, f, indent=2, ensure_ascii=False)
     append_submission_to_excel(entry)
-    send_feedback_email(entry)
 
     return jsonify({'ok': True})
 

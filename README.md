@@ -2,8 +2,8 @@
 
 This repository contains two minimal demos for a Student Feedback Form:
 
-- A Node/Express demo (if present) — previously created files may exist.
-- A Python/Flask demo (added here) which serves the same feedback form and stores submissions to `submissions.json`.
+- A Node/Express demo (if present) - previously created files may exist.
+- A Python/Flask demo which serves the same feedback form and stores submissions to `submissions.json` or PostgreSQL.
 
 How to run the Python/Flask app (PowerShell on Windows):
 
@@ -17,26 +17,23 @@ python app.py
 ```
 
 Notes:
-- The Flask app exposes `GET /submissions` to review saved feedback (raw JSON).
-- If you prefer the Node version instead, run `npm install` and `npm start` in the repository root (only if `package.json` and Node files exist).
-- This project is intentionally minimal. Tell me if you'd like a persistent DB (SQLite/Postgres), email notifications, or an admin view.
+- The Flask app exposes `GET /submissions` to review saved feedback.
+- PostgreSQL is supported when `DATABASE_URL` is set.
+- Without `DATABASE_URL`, the app falls back to `submissions.json`.
+- If you prefer the Node version instead, run `npm install` and `npm start` in the repository root only if `package.json` and Node files exist.
 
-Publishing a static demo (free, via GitHub Pages)
-
-1. The `docs/` folder contains a static-only version of the site that saves feedback to browser localStorage (no server required). To publish on GitHub Pages:
+PostgreSQL setup:
 
 ```powershell
-cd 'C:\Users\s2991\OneDrive\Documents\CSS'
-git init
-git add .
-git commit -m "Initial site"
-# Create a GitHub repository and follow their instructions to add the remote, e.g.:
-# git remote add origin https://github.com/<your-username>/<repo-name>.git
-git push -u origin main
+$env:DATABASE_URL='postgresql://USERNAME:PASSWORD@HOST:5432/DATABASE_NAME'
+python app.py
 ```
 
-2. In your GitHub repository settings → Pages, set the source to the `main` branch and `/docs` folder. GitHub Pages will publish https://<your-username>.github.io/<repo-name>/
+When `DATABASE_URL` is present, the app creates a `feedback_submissions` table automatically and stores new submissions there.
 
-Alternatively you can host the `docs/` folder on Netlify or Vercel (drag-and-drop deploy for a static site).
+Publishing a static demo (free, via GitHub Pages):
 
-If you want help creating the GitHub repo and publishing, tell me your GitHub username and repo name (I will only produce the commands for you to run locally).
+1. The `docs/` folder contains a static-only version of the site that saves feedback to browser localStorage.
+2. In your GitHub repository settings, enable Pages from the `main` branch and `/docs` folder.
+
+Alternatively, you can host the `docs/` folder on Netlify, Vercel, or Cloudflare Pages as a static site.

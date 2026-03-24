@@ -11,16 +11,159 @@ except ImportError:
     load_workbook = None
     EXCEL_EXPORT_AVAILABLE = False
 
+try:
+    import psycopg
+    from psycopg.rows import dict_row
+    from psycopg.types.json import Json
+    POSTGRES_AVAILABLE = True
+except ImportError:
+    psycopg = None
+    dict_row = None
+    Json = None
+    POSTGRES_AVAILABLE = False
+
 APP_DIR = os.path.dirname(__file__)
 SUB_FILE = os.path.join(APP_DIR, 'submissions.json')
 DESKTOP_DIR = os.path.join(os.path.expanduser('~'), 'Desktop')
 EXCEL_FILE = os.path.join(DESKTOP_DIR, 'feedback_submissions.xlsx')
 EXCEL_HEADERS = ['name', 'email', 'course', 'rating', 'comments', 'consent', 'receivedAt']
 MAX_SUBMISSIONS_PER_PERSON = 2
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
 
 
 def normalize_identity(value):
     return (value or '').strip().lower()
+
+
+def use_postgres():
+    return bool(DATABASE_URL and POSTGRES_AVAILABLE)
+
+
+def get_db_connection():
+    if not use_postgres():
+        return None
+    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
+
+
+def ensure_database():
+    if not use_postgres():
+        return
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS feedback_submissions (
+                    id BIGSERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    email TEXT,
+                    course TEXT NOT NULL,
+                    teachers JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    teacher_comments JSONB NOT NULL DEFAULT '{}'::jsonb,
+                    rating TEXT NOT NULL,
+                    comments TEXT,
+                    consent BOOLEAN NOT NULL DEFAULT FALSE,
+                    received_at TIMESTAMPTZ NOT NULL
+                )
+                '''
+            )
+        conn.commit()
+
+
+def ensure_submissions_file():
+    if not os.path.exists(SUB_FILE):
+        with open(SUB_FILE, 'w', encoding='utf-8') as f:
+            json.dump([], f)
+
+
+def load_file_submissions():
+    ensure_submissions_file()
+    try:
+        with open(SUB_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def save_file_submission(entry):
+    arr = load_file_submissions()
+    arr.append(entry)
+    with open(SUB_FILE, 'w', encoding='utf-8') as f:
+        json.dump(arr, f, indent=2, ensure_ascii=False)
+
+
+def get_postgres_submissions():
+    ensure_database()
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                SELECT
+                    name,
+                    email,
+                    course,
+                    teachers,
+                    teacher_comments AS "teacherComments",
+                    rating,
+                    comments,
+                    consent,
+                    to_char(received_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "receivedAt"
+                FROM feedback_submissions
+                ORDER BY received_at DESC
+                '''
+            )
+            return cur.fetchall()
+
+
+def count_postgres_submissions(name, email):
+    ensure_database()
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                SELECT COUNT(*) AS total
+                FROM feedback_submissions
+                WHERE lower(trim(name)) = %s
+                  AND lower(trim(COALESCE(email, ''))) = %s
+                ''',
+                (normalize_identity(name), normalize_identity(email))
+            )
+            row = cur.fetchone()
+            return row['total'] if row else 0
+
+
+def save_postgres_submission(entry):
+    ensure_database()
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                INSERT INTO feedback_submissions (
+                    name,
+                    email,
+                    course,
+                    teachers,
+                    teacher_comments,
+                    rating,
+                    comments,
+                    consent,
+                    received_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ''',
+                (
+                    entry.get('name', ''),
+                    entry.get('email', ''),
+                    entry.get('course', ''),
+                    Json(entry.get('teachers', [])),
+                    Json(entry.get('teacherComments', {})),
+                    entry.get('rating', ''),
+                    entry.get('comments', ''),
+                    bool(entry.get('consent')),
+                    entry.get('receivedAt')
+                )
+            )
+        conn.commit()
 
 
 def count_matching_submissions(entries, name, email):
@@ -33,10 +176,24 @@ def count_matching_submissions(entries, name, email):
         and normalize_identity(entry.get('email')) == normalized_email
     )
 
-def ensure_submissions_file():
-    if not os.path.exists(SUB_FILE):
-        with open(SUB_FILE, 'w', encoding='utf-8') as f:
-            json.dump([], f)
+
+def get_submission_count(name, email):
+    if use_postgres():
+        return count_postgres_submissions(name, email)
+    return count_matching_submissions(load_file_submissions(), name, email)
+
+
+def get_all_submissions():
+    if use_postgres():
+        return get_postgres_submissions()
+    return load_file_submissions()
+
+
+def save_submission(entry):
+    if use_postgres():
+        save_postgres_submission(entry)
+        return
+    save_file_submission(entry)
 
 
 def ensure_excel_file():
@@ -51,14 +208,8 @@ def ensure_excel_file():
     sheet = workbook.active
     sheet.title = 'Feedback'
     sheet.append(EXCEL_HEADERS)
-    if os.path.exists(SUB_FILE):
-        try:
-            with open(SUB_FILE, 'r', encoding='utf-8') as f:
-                existing_entries = json.load(f)
-        except Exception:
-            existing_entries = []
-        for entry in existing_entries:
-            sheet.append([entry.get(header, '') for header in EXCEL_HEADERS])
+    for entry in get_all_submissions():
+        sheet.append([entry.get(header, '') for header in EXCEL_HEADERS])
     workbook.save(EXCEL_FILE)
 
 
@@ -81,42 +232,45 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/api/health', methods=['GET'])
+def health():
+    return jsonify({
+        'ok': True,
+        'status': 'healthy',
+        'storage': 'postgres' if use_postgres() else 'json'
+    })
+
+
 @app.route('/submit', methods=['POST'])
 def submit():
     data = request.get_json() or {}
-    # basic validation
     if not data.get('name') or not data.get('course') or not data.get('rating'):
         return jsonify({'error': 'name, course and rating are required'}), 400
 
-    ensure_submissions_file()
-    try:
-        with open(SUB_FILE, 'r', encoding='utf-8') as f:
-            arr = json.load(f)
-    except Exception:
-        arr = []
-
-    if count_matching_submissions(arr, data.get('name'), data.get('email')) >= MAX_SUBMISSIONS_PER_PERSON:
+    if get_submission_count(data.get('name'), data.get('email')) >= MAX_SUBMISSIONS_PER_PERSON:
         return jsonify({'error': 'This name and email can only submit feedback twice.'}), 400
 
     entry = dict(data)
+    entry['teachers'] = entry.get('teachers') or []
+    entry['teacherComments'] = entry.get('teacherComments') or {}
+    entry['consent'] = bool(entry.get('consent'))
     entry['receivedAt'] = datetime.utcnow().isoformat() + 'Z'
-    arr.append(entry)
-    with open(SUB_FILE, 'w', encoding='utf-8') as f:
-        json.dump(arr, f, indent=2, ensure_ascii=False)
+
+    save_submission(entry)
     append_submission_to_excel(entry)
 
-    return jsonify({'ok': True})
+    return jsonify({'ok': True, 'storage': 'postgres' if use_postgres() else 'json'})
 
 
 @app.route('/submissions', methods=['GET'])
 def submissions():
-    ensure_submissions_file()
-    with open(SUB_FILE, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    return jsonify(data)
+    return jsonify(get_all_submissions())
 
 
 if __name__ == '__main__':
-    ensure_submissions_file()
+    if use_postgres():
+        ensure_database()
+    else:
+        ensure_submissions_file()
     ensure_excel_file()
     app.run(host='127.0.0.1', port=5000, debug=True, use_reloader=False)

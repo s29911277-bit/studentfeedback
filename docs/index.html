@@ -9,6 +9,9 @@
   <body>
     <main class="container">
       <h1>Student Feedback</h1>
+      <p class="confidentiality-note">
+        Your feedback is treated as highly confidential and is intended only for review by the appropriate academic team.
+      </p>
 
       <form id="feedbackForm">
         <label>
@@ -23,8 +26,26 @@
 
         <label>
           Course / Subject
-          <input type="text" name="course" required />
+          <select name="course" required>
+            <option value="">--</option>
+            <option value="Artificial Intelligence &amp; Machine Learning">Artificial Intelligence &amp; Machine Learning</option>
+            <option value="Cybersecurity">Cybersecurity</option>
+            <option value="Cloud Computing">Cloud Computing</option>
+            <option value="Digital Marketing">Digital Marketing</option>
+            <option value="Blockchain Technology">Blockchain Technology</option>
+            <option value="Robotics &amp; Automation">Robotics &amp; Automation</option>
+            <option value="Biotechnology">Biotechnology</option>
+          </select>
         </label>
+
+        <section class="teacher-section" id="teacherSection">
+          <div class="teacher-section-header">
+            <strong>Teachers</strong>
+            <p>Select one or more teachers for this course.</p>
+          </div>
+          <div id="teacherOptions" class="teacher-options"></div>
+          <div id="teacherComments" class="teacher-comments"></div>
+        </section>
 
         <label>
           Rating
@@ -54,6 +75,14 @@
         <div id="message" role="status" aria-live="polite"></div>
       </form>
     </main>
+
+    <div class="popup-backdrop" id="popupBackdrop" hidden>
+      <div class="popup-dialog" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+        <h3 id="popupTitle">Submission Status</h3>
+        <p id="popupText"></p>
+        <button type="button" id="popupOkButton" class="popup-ok-button">OK</button>
+      </div>
+    </div>
 
     <script src="static/js/script.js"></script>
   </body>

@@ -18,8 +18,19 @@ python app.py
 
 Notes:
 - The Flask app exposes `GET /submissions` to review saved feedback (raw JSON).
+- Email delivery is supported through Gmail SMTP. Set `FEEDBACK_SMTP_EMAIL` and `FEEDBACK_SMTP_APP_PASSWORD` before running `app.py`.
 - If you prefer the Node version instead, run `npm install` and `npm start` in the repository root (only if `package.json` and Node files exist).
 - This project is intentionally minimal. Tell me if you'd like a persistent DB (SQLite/Postgres), email notifications, or an admin view.
+
+Gmail setup for feedback delivery
+
+```powershell
+$env:FEEDBACK_SMTP_EMAIL='s29911277@gmail.com'
+$env:FEEDBACK_SMTP_APP_PASSWORD='your-16-character-gmail-app-password'
+python app.py
+```
+
+The app sends each submitted feedback entry to `s29911277@gmail.com`.
 
 Publishing a static demo (free, via GitHub Pages)
 

@@ -281,6 +281,14 @@ h2 {
   margin-bottom: 24px;
 }
 
+.confidentiality-note {
+  margin: 12px 0 0;
+  max-width: 54ch;
+  color: var(--muted);
+  font-size: 0.96rem;
+  line-height: 1.6;
+}
+
 .progress-shell {
   width: min(220px, 100%);
   height: 12px;
@@ -390,6 +398,68 @@ textarea:focus {
   transform: scale(1.15);
 }
 
+.teacher-section {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.teacher-section-header span,
+.teacher-section-header p {
+  display: block;
+}
+
+.teacher-section-header p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.teacher-options,
+.teacher-comments {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.teacher-option {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.teacher-option input {
+  margin-top: 3px;
+  accent-color: var(--cyan);
+  transform: scale(1.1);
+}
+
+.teacher-option-title {
+  font-weight: 600;
+}
+
+.teacher-option-subtitle,
+.teacher-empty {
+  color: var(--muted);
+}
+
+.teacher-comment-card {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.teacher-comment-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .actions {
   display: flex;
   flex-direction: column;
@@ -461,6 +531,59 @@ textarea:focus {
 
 #message.error {
   color: #ffbab1;
+}
+
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(2, 12, 20, 0.72);
+  backdrop-filter: blur(8px);
+  z-index: 20;
+}
+
+.popup-backdrop[hidden] {
+  display: none !important;
+}
+
+.popup-dialog {
+  width: min(420px, 100%);
+  padding: 28px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05)),
+    rgba(8, 30, 46, 0.96);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.popup-dialog h3 {
+  margin: 0 0 12px;
+  font-size: 1.35rem;
+}
+
+.popup-dialog p {
+  margin: 0 0 22px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.popup-ok-button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font: inherit;
+  font-weight: 700;
+  color: #081420;
+  background: linear-gradient(135deg, var(--accent-soft), var(--accent));
+  box-shadow: 0 14px 24px rgba(255, 138, 61, 0.22);
+  cursor: pointer;
+}
+
+.popup-ok-button:hover {
+  transform: translateY(-1px);
 }
 
 @keyframes float {

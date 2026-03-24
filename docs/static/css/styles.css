@@ -3,9 +3,24 @@
 body{font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);margin:0;padding:24px}
 .container{max-width:680px;margin:24px auto;padding:20px;background:var(--card);border-radius:10px;box-shadow:0 6px 18px rgba(11,22,39,0.06)}
 h1{margin-top:0;color:var(--accent)}
+.confidentiality-note{margin:8px 0 16px;color:var(--muted);font-size:.95rem;line-height:1.5}
 form label{display:block;margin:12px 0;color:#111}
 input[type=text],input[type=email],select,textarea{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px}
 .checkbox{display:flex;align-items:center;gap:8px}
 .actions{margin-top:14px}
 button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
 #message{margin-top:12px;color:var(--muted)}
+.popup-backdrop{position:fixed;inset:0;display:grid;place-items:center;padding:24px;background:rgba(15,23,42,.45);z-index:20}
+.popup-backdrop[hidden]{display:none!important}
+.popup-dialog{width:min(360px,100%);padding:22px;background:#fff;border-radius:14px;box-shadow:0 18px 40px rgba(15,23,42,.2)}
+.popup-dialog h3{margin:0 0 10px;color:#111827}
+.popup-dialog p{margin:0 0 18px;color:#374151;line-height:1.5}
+.popup-ok-button{background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer}
+.teacher-section{margin:14px 0;padding:14px;border:1px solid #d1d5db;border-radius:10px;background:#f9fafb}
+.teacher-section-header p{margin:6px 0 0;color:#6b7280}
+.teacher-options,.teacher-comments{display:grid;gap:10px;margin-top:12px}
+.teacher-option{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fff}
+.teacher-option-title{font-weight:600}
+.teacher-option-subtitle,.teacher-empty{color:#6b7280}
+.teacher-comment-card{padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#fff}
+.teacher-comment-card label{display:flex;flex-direction:column;gap:8px;margin:0}

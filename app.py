@@ -29,6 +29,7 @@ EXCEL_FILE = os.path.join(DESKTOP_DIR, 'feedback_submissions.xlsx')
 EXCEL_HEADERS = ['name', 'email', 'course', 'rating', 'comments', 'consent', 'receivedAt']
 MAX_SUBMISSIONS_PER_PERSON = 2
 DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
+VERCEL_ENV = os.environ.get('VERCEL', '').strip()
 
 
 def normalize_identity(value):
@@ -37,6 +38,10 @@ def normalize_identity(value):
 
 def use_postgres():
     return bool(DATABASE_URL and POSTGRES_AVAILABLE)
+
+
+def should_use_excel_export():
+    return EXCEL_EXPORT_AVAILABLE and not VERCEL_ENV
 
 
 def get_db_connection():
@@ -197,7 +202,7 @@ def save_submission(entry):
 
 
 def ensure_excel_file():
-    if not EXCEL_EXPORT_AVAILABLE:
+    if not should_use_excel_export():
         return
 
     os.makedirs(DESKTOP_DIR, exist_ok=True)
@@ -214,7 +219,7 @@ def ensure_excel_file():
 
 
 def append_submission_to_excel(entry):
-    if not EXCEL_EXPORT_AVAILABLE:
+    if not should_use_excel_export():
         return
 
     ensure_excel_file()
@@ -257,7 +262,10 @@ def submit():
     entry['receivedAt'] = datetime.utcnow().isoformat() + 'Z'
 
     save_submission(entry)
-    append_submission_to_excel(entry)
+    try:
+        append_submission_to_excel(entry)
+    except Exception as exc:
+        print(f'Excel export skipped: {exc}')
 
     return jsonify({'ok': True, 'storage': 'postgres' if use_postgres() else 'json'})
 
@@ -272,5 +280,8 @@ if __name__ == '__main__':
         ensure_database()
     else:
         ensure_submissions_file()
-    ensure_excel_file()
+    try:
+        ensure_excel_file()
+    except Exception as exc:
+        print(f'Excel setup skipped: {exc}')
     app.run(host='127.0.0.1', port=5000, debug=True, use_reloader=False)
